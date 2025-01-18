@@ -3,9 +3,7 @@ import numpy as np
 import pupil_apriltags as apriltag
 
 # Constants
-IMAGE_PATH = "tomatocan0_color.png"
-
-
+IMAGE_PATH ="tomatocan3_color.png"
 
 def create_mask_from_polygons(image_shape, corners_list):
     mask = np.zeros(image_shape[:2], dtype=np.uint8)  # Initialize mask (same size as image)
@@ -13,40 +11,33 @@ def create_mask_from_polygons(image_shape, corners_list):
         polygon = np.array(corners , dtype=np.int32)
         cv2.fillPoly(mask, [polygon], 255)  # Fill the polygon
     return mask
+
+
+
+def smooth_and_inpaint(image, mask, inpaint_radius=1):
+    # Dilate the mask to expand the inpainting region slightly
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    dilated_mask = cv2.dilate(mask, kernel, iterations=1)
+    blurred_mask = cv2.GaussianBlur(dilated_mask, (3, 3), 0)
+    inpainted_image = cv2.inpaint(image, blurred_mask, inpaint_radius, cv2.INPAINT_TELEA)
+    return inpainted_image
+
 def process_apriltag_detection(image_path):
-    """
-    Detects AprilTags in the given image and returns the detections, an annotated image, and expanded corner coordinates.
-    """
     # Read the input image
     input_image = cv2.imread(image_path)
     if input_image is None:
         raise FileNotFoundError(f"Image not found at path: {image_path}")
-
-    # Convert image to grayscale
     gray_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2GRAY)
-
-    # Initialize the AprilTag detector
     detector = apriltag.Detector()
-
-    # Perform detection
     detections = detector.detect(gray_image)
-
-    # List to store expanded corner coordinates
     expanded_corners_list = []
 
-    # Expand margin around the tags
-    expansion_margin = 10  # Change this value to control how much to expand
+    expansion_margin = 10
 
-    # Draw detections on the original image
     for detection in detections:
-        # Extract the corners of the detection
         corners = np.array(detection.corners, dtype=np.int32)
-
-        # Calculate the center of the tag
         center_x = np.mean(corners[:, 0])
         center_y = np.mean(corners[:, 1])
-
-        # Expand each corner outward
         expanded_corners = []
         for corner in corners:
             x, y = corner
@@ -66,7 +57,7 @@ def process_apriltag_detection(image_path):
 
     return detections, input_image, expanded_corners_list
 
-# Call the function
+
 try:
     detections, detection_image, expanded_corners = process_apriltag_detection(IMAGE_PATH)  # Unpack all three values
     print(f"Detected {len(detections)} AprilTags.")
@@ -75,7 +66,7 @@ try:
     for i, corners in enumerate(expanded_corners):
         print(f"AprilTag {i + 1} corners: {expanded_corners}")
     mask = create_mask_from_polygons(detection_image.shape,expanded_corners)
-    inpainted_image = cv2.inpaint(detection_image, mask, inpaintRadius=60, flags=cv2.INPAINT_TELEA)
+    inpainted_image = smooth_and_inpaint(detection_image, mask, inpaint_radius=2)
     cv2.imwrite('image_without_apriltags.jpg', inpainted_image)
 
     # Display the detection results

@@ -1,103 +1,77 @@
-import cv2; print("cv2 version: " + cv2.__version__)
-import open3d as o3d; print("o3d version: " + o3d.__version__)
+import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-import copy
-import os
-__READPATH__  = r"D:\Masters\Project\datas\SampleData\daten\tomatocan"
+import pupil_apriltags as apriltag
 
-# Model path
-__MODELPATH__ = r"D:\Masters\Project\datas\SampleData\daten\models\model1\tomatocan.stl"
+# Constants
+IMAGE_PATH ="tomatocan3_color.png"
 
-__N_MODELPOINTS_ = 10000    # number of points in pointcstlouds (stl -> pcd)
-path = r"D:\Masters\Project\datas\SampleData\daten\models\model1\tomatocan.stl"
-mesh = o3d.io.read_triangle_mesh(path)
-
-if mesh.is_empty():
-    print("Mesh is empty or invalid!")
-else:
-    print("Mesh loaded successfully.")
-    o3d.visualization.draw_geometries([mesh])
-
-
-# def load_model_pc():
-#     print(f"Loading model from: {__MODELPATH__}")
-#     model_mesh = o3d.io.read_triangle_mesh(__MODELPATH__)
-#     if model_mesh.is_empty():
-#         raise RuntimeError("Model mesh is empty or invalid.")
-#     print("Model mesh loaded.")
-#
-#     pc = model_mesh.sample_points_poisson_disk(__N_MODELPOINTS_)
-#     if pc.is_empty():
-#         raise RuntimeError("Point cloud sampling failed. Result is empty.")
-#     print("Point cloud sampled successfully.")
-#     return pc
-# modelPc = load_model_pc()
-# print("Model point cloud loaded successfully.")
-
-
-# def load_scene_pointcloud(filename):
-#     path_1 = os.path.join(__READPATH__, f"{filename}.txt")  # Assuming depth file for scene
-#     print(f"Loading scene point cloud from: {path_1}")
-#     try:
-#         data = np.load(path_1)
-#         print(f"Scene data shape: {data.shape}")
-#
-#         # Ensure the data is of the correct type and shape (n, 3)
-#         if data.ndim != 2 or data.shape[1] != 3:
-#             raise ValueError(f"Invalid data shape: {data.shape}. Expected shape (n, 3).")
-#
-#         # Convert the data to the correct type
-#         pc = o3d.geometry.PointCloud()
-#         pc.points = o3d.utility.Vector3dVector(data.astype(np.float64))  # Convert to float64 if necessary
-#
-#         return pc
-#     except Exception as e:
-#         print(f"Failed to load scene point cloud: {e}")
-#         return o3d.geometry.PointCloud()
-
-
-if __name__ == '__main__':
-    # Rename 'dir' to 'directory_files' to avoid the conflict with the built-in 'dir' function
-    directory_files = os.listdir(path='D:\\Masters\\Project\\datas\\SampleData\\daten\\tomatocan')
-    print(f"Files in directory: {directory_files}")
-    filenames = []
-
-    # Load model point cloud
-
-    for filename in directory_files:
-        if filename.endswith(".txt"):
-            filenames.append(filename[:-4])  # Remove the ".txt" extension
-    for filename in filenames:
-        print(f"Processing: {filename}")
-
-        # Load scene point cloud
-        # scenePc = load_scene_pointcloud(filename)
-        # if scenePc.is_empty():
-        #     print(f"Scene point cloud for {filename} is empty.")
-        #     continue
-
-
-    # Load transformation matrix
-        trafo_path = os.path.join('D:\\Masters\\Project\\datas\\SampleData\\daten\\tomatocan', f"{filename}.txt")
-        if not os.path.exists(trafo_path):
-            print(f"Transformation file missing: {trafo_path}")
-        continue
-
-        trafo_complete = np.loadtxt(trafo_path)
-        if trafo_complete.shape != (4, 4):
-            print(f"Invalid transformation matrix shape for {filename}: {trafo_complete.shape}")
-        continue
+def create_mask_from_polygons(image_shape, corners_list):
+    mask = np.zeros(image_shape[:2], dtype=np.uint8)  # Initialize mask (same size as image)
+    for corners in corners_list:
+        polygon = np.array(corners , dtype=np.int32)
+        cv2.fillPoly(mask, [polygon], 255)  # Fill the polygon
+    return mask
 
 
 
-    # Apply transformation
-    #modelPcTafo = copy.copy(modelPc).transform(trafo_complete)
+def smooth_and_inpaint(image, mask, inpaint_radius=1):
+    # Dilate the mask to expand the inpainting region slightly
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    dilated_mask = cv2.dilate(mask, kernel, iterations=1)
+    blurred_mask = cv2.GaussianBlur(dilated_mask, (3, 3), 0)
+    inpainted_image = cv2.inpaint(image, blurred_mask, inpaint_radius, cv2.INPAINT_TELEA)
+    return inpainted_image
 
-    # Visualize
-    #visu = o3d.visualization.VisualizerWithKeyCallback()
-    #visu.create_window(window_name=f"Pointcloud {filename}")
-    #visu.add_geometry(scenePc)
-    #visu.add_geometry(modelPcTafo)
-    visu.run()
-    visu.destroy_window()
+def process_apriltag_detection(image_path):
+    # Read the input image
+    input_image = cv2.imread(image_path)
+    if input_image is None:
+        raise FileNotFoundError(f"Image not found at path: {image_path}")
+    gray_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2GRAY)
+    detector = apriltag.Detector()
+    detections = detector.detect(gray_image)
+    expanded_corners_list = []
+
+    expansion_margin = 10
+
+    for detection in detections:
+        corners = np.array(detection.corners, dtype=np.int32)
+        center_x = np.mean(corners[:, 0])
+        center_y = np.mean(corners[:, 1])
+        expanded_corners = []
+        for corner in corners:
+            x, y = corner
+            dx = x - center_x
+            dy = y - center_y
+
+            # Push corner outward by the expansion margin
+            expanded_x = int(x + dx / np.linalg.norm([dx, dy]) * expansion_margin)
+            expanded_y = int(y + dy / np.linalg.norm([dx, dy]) * expansion_margin)
+            expanded_corners.append([expanded_x, expanded_y])
+
+        # Append expanded corners as a polygon
+        expanded_corners = np.array(expanded_corners, dtype=np.int32)
+        expanded_corners_list.append(expanded_corners)
+
+
+
+    return detections, input_image, expanded_corners_list
+
+
+try:
+    detections, detection_image, expanded_corners = process_apriltag_detection(IMAGE_PATH)  # Unpack all three values
+    print(f"Detected {len(detections)} AprilTags.")
+
+    # Print the corner coordinates for each detected tag
+    for i, corners in enumerate(expanded_corners):
+        print(f"AprilTag {i + 1} corners: {expanded_corners}")
+    mask = create_mask_from_polygons(detection_image.shape,expanded_corners)
+    inpainted_image = smooth_and_inpaint(detection_image, mask, inpaint_radius=2)
+    cv2.imwrite('image_without_apriltags.jpg', inpainted_image)
+
+    # Display the detection results
+    cv2.imshow("Detection Results", inpainted_image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+except FileNotFoundError as e:
+    print(e)
