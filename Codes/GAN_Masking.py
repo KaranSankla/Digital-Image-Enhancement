@@ -48,5 +48,3 @@ for filename in os.listdir(IMAGE_PATH):
             print(f"Error processing {filename}: {e}")
 
 
-git config --global user.email "you@example.com"
-  git config --global user.name "Your Name"
