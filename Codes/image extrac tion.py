@@ -1,11 +1,12 @@
 import os
 import numpy as np
 import cv2
-import apriltag
+import pupil_apriltags as apriltag
+
 
 # Input and output paths
-input_path = r"D:\Masters\Project\datas\SampleData\daten\tomatocan"
-output_path = r"D:\Masters\Project\datas\ProcessedImages"
+input_path = "/home/karan-sankla/Testbench/objectfiles/apple/rgbddata"
+output_path = "/home/karan-sankla/Testbench/objectfiles/apple/RGB_IMAGE"
 
 # Create output directory if it doesn't exist
 os.makedirs(output_path, exist_ok=True)
