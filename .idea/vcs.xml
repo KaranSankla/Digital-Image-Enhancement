@@ -2,6 +2,6 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/lama" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ss25_sankla_dataset-marker-removal" vcs="Git" />
   </component>
 </project>

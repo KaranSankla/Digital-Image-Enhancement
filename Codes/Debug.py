@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import pupil_apriltags as apriltag
 # Constants
-IMAGE_PATH ="tomatocan0_color.png"
+IMAGE_PATH ="knife21_color.png"
 
 def create_mask_from_polygons(image_shape, corners_list):
     mask = np.zeros(image_shape[:2], dtype=np.uint8)  # Initialize mask (same size as image)
