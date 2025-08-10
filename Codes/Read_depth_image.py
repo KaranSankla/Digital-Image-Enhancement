@@ -15,9 +15,9 @@ import copy
 
 __OBJECT_NAME__ = "tomatocan"
 
-__PATH__ = "/home/karan-sankla/Testbench/objectfiles/apple/rgbddata"
+__PATH__ = "/home/karan-sankla/Testbench/objectfiles"
 
-__READPATH__ = "/home/karan-sankla/Testbench/objectfiles/apple/rgbddata"
+__READPATH__ = "/home/karan-sankla/Testbench/objectfiles/apple"
 #__MODELPATH__ = "D:/Masters/Project/datas/SampleData/daten/tomatocan/models/model1/tomatocan.stl"
 
 __N_MODELPOINTS_ = 10000    # number of points in pointcstlouds (stl -> pcd)

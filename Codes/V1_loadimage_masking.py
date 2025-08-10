@@ -1,9 +1,11 @@
 import cv2
 import numpy as np
 import pupil_apriltags as apriltag
+import os
 
 # Constants
-IMAGE_PATH ="knife21_color.png"
+IMAGE_PATH ="/home/karan-sankla/Testbench/objectfiles/color_images"
+OUTPUT_PATH = "/home/karan-sankla/Testbench/objectfiles/nomarker_images"
 
 def create_mask_from_polygons(image_shape, corners_list):
     mask = np.zeros(image_shape[:2], dtype=np.uint8)  # Initialize mask (same size as image)
@@ -57,21 +59,27 @@ def process_apriltag_detection(image_path):
 
     return detections, input_image, expanded_corners_list
 
+for filename in os.listdir(IMAGE_PATH):
+    if filename.lower().endswith((".png", ".jpg", ".jpeg")):
+        image_path = os.path.join(IMAGE_PATH, filename)
+        try:
+            detections, detection_image, expanded_corners = process_apriltag_detection(image_path)
+            print(f"Detected {len(detections)} AprilTags in {filename}.")
 
-try:
-    detections, detection_image, expanded_corners = process_apriltag_detection(IMAGE_PATH)  # Unpack all three values
-    print(f"Detected {len(detections)} AprilTags.")
+            # If no detections, just copy the original image
+            if not detections:
+                inpainted_image = detection_image.copy()
+            else:
+                # Combine all masks for this image
+                mask = create_mask_from_polygons(detection_image.shape, expanded_corners)
+                inpainted_image = smooth_and_inpaint(detection_image, mask, inpaint_radius=2)
 
-    # Print the corner coordinates for each detected tag
-    for i, corners in enumerate(expanded_corners):
-        print(f"AprilTag {i + 1} corners: {expanded_corners}")
-    mask = create_mask_from_polygons(detection_image.shape,expanded_corners)
-    inpainted_image = smooth_and_inpaint(detection_image, mask, inpaint_radius=2)
-    cv2.imwrite('image_without_apriltags.jpg', inpainted_image)
+            # Save result in OUTPUT_PATH with proper name
+            nomarker_filename = os.path.splitext(filename)[0] + "_nomarker.png"
+            save_path = os.path.join(OUTPUT_PATH, nomarker_filename)
+            cv2.imwrite(save_path, inpainted_image)
 
-    # Display the detection results
-    cv2.imshow("Detection Results", inpainted_image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-except FileNotFoundError as e:
-    print(e)
+            print(f"Saved: {save_path}")
+
+        except FileNotFoundError as e:
+            print(e)

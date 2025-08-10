@@ -4,8 +4,8 @@ import pupil_apriltags as apriltag
 import os
 
 
-IMAGE_PATH = "/home/karan-sankla/Testbench/objectfiles/apple/RGB_IMAGE"
-OUTPUT_PATH = "/home/karan-sankla/Testbench/objectfiles/apple/Masked_images"
+IMAGE_PATH = "/home/karan-sankla/Testbench/objectfiles/color_images"
+OUTPUT_PATH = "/home/karan-sankla/Testbench/objectfiles/dataset"
 
 def process_apriltag_detection(image_path):
     input_image = cv2.imread(image_path)
