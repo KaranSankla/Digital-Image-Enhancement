@@ -75,7 +75,7 @@ for filename in os.listdir(IMAGE_PATH):
                 inpainted_image = smooth_and_inpaint(detection_image, mask, inpaint_radius=2)
 
             # Save result in OUTPUT_PATH with proper name
-            nomarker_filename = os.path.splitext(filename)[0] + "_nomarker.png"
+            nomarker_filename = os.path.splitext(filename)[0] + "_.png"
             save_path = os.path.join(OUTPUT_PATH, nomarker_filename)
             cv2.imwrite(save_path, inpainted_image)
 
