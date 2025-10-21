@@ -1,0 +1,11 @@
+Requirement already satisfied: setuptools in ./.venv/lib/python3.12/site-packages (60.2.0)
+Collecting setuptools
+  Using cached setuptools-80.9.0-py3-none-any.whl.metadata (6.6 kB)
+Downloading setuptools-80.9.0-py3-none-any.whl (1.2 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 6.6 MB/s  0:00:00
+Installing collected packages: setuptools
+  Attempting uninstall: setuptools
+    Found existing installation: setuptools 60.2.0
+    Uninstalling setuptools-60.2.0:
+      Successfully uninstalled setuptools-60.2.0
+Successfully installed setuptools-80.9.0

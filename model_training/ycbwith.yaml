@@ -1,0 +1,10 @@
+path: /home/karan-sankla/Digital-Image-Enhancement/train_test
+train: images/train
+val: images/train  # Point val to train, YOLO will auto-split
+test: images/test
+names:
+  0: woodblock
+  1: banana
+  2: cleanser
+  3: mediumclamp
+  4: apple
